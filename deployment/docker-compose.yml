@@ -1,0 +1,10 @@
+services:
+  solver:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    image: seatl-xl:latest
+    container_name: seatl-xl
+    restart: "no"
+    environment:
+      SEATL_DEFAULT_ARGS: ${SEATL_DEFAULT_ARGS:-}
