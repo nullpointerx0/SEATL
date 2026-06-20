@@ -16,19 +16,30 @@ This XL solver extends the 11-layer architecture with **Layer 12: Parallel Tabu 
 
 ## Benchmark Results
 
-| Graph | Old 11-layer | New XL (1 thread) | Speedup |
-|-------|--------------|-------------------|---------|
-| K_{7,7}    | 51.6 ms    | **3.4 ms**     | 15× |
-| K_{10,10}  | 303 ms     | **20.9 ms**    | 14× |
-| K_{12,12}  | 4338 ms    | **57 ms**      | 76× |
-| K_{12,15}  | TIMEOUT    | **870 ms**     | ∞ |
-| K_{15,15}  | TIMEOUT    | **308 ms**     | ∞ |
-| K_{18,18}  | TIMEOUT    | **689 ms**     | ∞ |
-| K_{20,20}  | HOURS      | **4.2 s**      | 1000s× |
-| K_{22,22}  | impossible | **15 s**       | — |
-| K_{25,25}  | impossible | **61 s**       | — |
+Wall-clock time to find a verified-valid SEATL labeling (every edge weight forms
+the exact arithmetic progression `{a, …, a+mn-1}`, checked on each run). Median of
+5 runs; every run solved (5/5).
 
-(Times are on 1 CPU thread; expect 4-8x faster on 8-core machine)
+| Graph     | 1 thread   | 8 threads | Parallel speedup |
+|-----------|-----------:|----------:|:----------------:|
+| K_{7,7}   |    5.4 ms  |   2.1 ms  | 2.5× |
+| K_{10,10} |     35 ms  |  12.7 ms  | 2.8× |
+| K_{12,12} |     97 ms  |    29 ms  | 3.3× |
+| K_{12,15} |   1.44 s   |   329 ms  | 4.4× |
+| K_{15,15} |   0.62 s   |   231 ms  | 2.7× |
+| K_{18,18} |   1.35 s   |   345 ms  | 3.9× |
+| K_{20,20} |   7.84 s   |  1.96 s   | 4.0× |
+| K_{22,22} |  21.8 s    |  4.65 s   | 4.7× |
+| K_{25,25} |  95.5 s    | 16.6 s    | 5.8× |
+
+**Methodology.** CPU: Intel Core i7-13700HX. Built with `g++ 15.2 -O3 -fopenmp`
+(C++17). 8-thread runs pin OpenMP to 8 cores (`-j 8`); 1-thread runs use `-j 1`.
+Times are wall-clock medians as reported by the solver. Reproduce with `bench.sh`.
+
+Parallel speedup is sub-linear (2.5–6×) because Layer 12 is a *first-worker-wins*
+race: the workers explore independent random regions, so adding cores raises the
+probability that *some* worker finds `score = 0` quickly rather than dividing a
+fixed workload. Speedup grows with instance size as the search becomes harder.
 
 ## Compilation
 
@@ -104,8 +115,8 @@ For K_{20,20} with 400 edges, this is the difference between **400×each swap** 
 ### Parallel Speedup
 
 ```
-Single thread:  K_{20,20} = 10s
-8 threads:      K_{20,20} = 1.5-3s  (depends on which worker finds it first)
+Single thread:  K_{20,20} = 7.8s
+8 threads:      K_{20,20} = 2.0s   (depends on which worker finds it first)
 ```
 
 The workers all start with different random seeds, exploring different regions of the search space simultaneously. The first one to find score=0 wins.
